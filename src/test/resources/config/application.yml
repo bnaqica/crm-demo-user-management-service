@@ -1,0 +1,24 @@
+# Added on top of src/main/resources/application.yml for tests. The addresses here are never contacted.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9999/test-issuer
+      client:
+        registration:
+          ums-internal:
+            client-secret: ums-internal-local-secret
+          ums-portal:
+            client-secret: ums-portal-local-secret
+        provider:
+          crm-internal:
+            token-uri: http://localhost:9999/token
+          portal:
+            token-uri: http://localhost:9999/token
+  kafka:
+    bootstrap-servers: localhost:9   # replaced by Testcontainers in integration tests; never contacted otherwise
+ums:
+  keycloak:
+    base-url: http://localhost:9999/keycloak
+  corporate-domains: corp.example
