@@ -1,11 +1,12 @@
 package com.bnaqica.crmdemousermanagementservice;
 
+import com.bnaqica.crmdemousermanagementservice.support.AuditTestDatabase;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, AuditTestDatabase.class})
 class CrmDemoUserManagementServiceApplicationTests {
 
     /** Fails if Flyway can't migrate the database or the application can't start against it. */

@@ -11,7 +11,11 @@ spring:
             client-secret: ums-internal-local-secret
           ums-portal:
             client-secret: ums-portal-local-secret
+          ums-admin:
+            client-secret: ums-admin-local-secret
         provider:
+          crm-admin:
+            token-uri: http://localhost:9999/token
           crm-internal:
             token-uri: http://localhost:9999/token
           portal:
@@ -21,4 +25,11 @@ spring:
 ums:
   keycloak:
     base-url: http://localhost:9999/keycloak
+  internal-issuer-uri: http://localhost:9999/internal-issuer
+  portal-issuer-uri: http://localhost:9999/portal-issuer
   corporate-domains: corp.example
+
+  cors:
+    allowed-origins: http://localhost:5175
+  audit:
+    sensitive-attributes: phone

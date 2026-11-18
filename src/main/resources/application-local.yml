@@ -17,7 +17,11 @@ spring:
             client-secret: ums-internal-local-secret
           ums-portal:
             client-secret: ums-portal-local-secret
+          ums-admin:
+            client-secret: ums-admin-local-secret
         provider:
+          crm-admin:
+            token-uri: http://localhost:8180/realms/crm-admin/protocol/openid-connect/token
           crm-internal:
             token-uri: http://localhost:8180/realms/crm-internal/protocol/openid-connect/token
           portal:
@@ -25,9 +29,22 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
 ums:
+  audit:
+    datasource:
+      url: jdbc:postgresql://localhost:5432/crm_audit_db   # local-docker/postgres
+      owner-username: audit_owner
+      owner-password: local
+      writer-username: audit_writer
+      writer-password: local
+      reader-username: audit_reader
+      reader-password: local
   keycloak:
     base-url: http://localhost:8180   # local-docker/keycloak
+  portal-issuer-uri: http://localhost:8180/realms/portal   # unused while the local profile turns authentication off
+  internal-issuer-uri: http://localhost:8180/realms/crm-internal   # unused while the local profile turns authentication off
   corporate-domains: crm.local,corp.example
+  cors:
+    allowed-origins: http://localhost:5175   # crm-demo-admin-ui dev server
 springdoc:
   api-docs:
     enabled: true

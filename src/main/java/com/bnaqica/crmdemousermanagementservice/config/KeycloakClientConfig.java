@@ -21,8 +21,8 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 /**
  * One {@link KeycloakAdminClient} per realm, each sending a client-credentials token for that realm's UMS service
- * account ({@code ums-internal} or {@code ums-portal}, registered under {@code spring.security.oauth2.client}).
- * The master realm is never used.
+ * account ({@code ums-internal} or {@code ums-portal}, registered under {@code spring.security.oauth2.client}), and
+ * one for crm-admin as {@code ums-admin}, which only reads and creates admin accounts. The master realm is never used.
  */
 @Configuration
 @EnableConfigurationProperties(UmsProperties.class)
@@ -30,6 +30,8 @@ public class KeycloakClientConfig {
 
     private static final Map<UserType, String> REGISTRATIONS =
             Map.of(UserType.INTERNAL, "ums-internal", UserType.EXTERNAL, "ums-portal");
+    static final String ADMIN_REALM = "crm-admin";
+    private static final String ADMIN_REGISTRATION = "ums-admin";
 
     /** Works outside web requests too (Kafka listeners, scheduled jobs). */
     @Bean
@@ -40,20 +42,27 @@ public class KeycloakClientConfig {
 
     @Bean
     KeycloakClients keycloakClients(UmsProperties properties, OAuth2AuthorizedClientManager clientManager) {
-        return new KeycloakClients(Map.of(
-                UserType.INTERNAL, client(properties, clientManager, UserType.INTERNAL),
-                UserType.EXTERNAL, client(properties, clientManager, UserType.EXTERNAL)));
+        return new KeycloakClients(
+                Map.of(
+                        UserType.INTERNAL, client(properties, clientManager, UserType.INTERNAL),
+                        UserType.EXTERNAL, client(properties, clientManager, UserType.EXTERNAL)),
+                client(properties, clientManager, ADMIN_REALM, ADMIN_REGISTRATION));
     }
 
     private static KeycloakAdminClient client(
             UmsProperties properties, OAuth2AuthorizedClientManager clientManager, UserType type) {
+        return client(properties, clientManager, type.getRealm(), REGISTRATIONS.get(type));
+    }
+
+    private static KeycloakAdminClient client(
+            UmsProperties properties, OAuth2AuthorizedClientManager clientManager, String realm, String registration) {
         var interceptor = new OAuth2ClientHttpRequestInterceptor(clientManager);
-        interceptor.setClientRegistrationIdResolver(request -> REGISTRATIONS.get(type));
+        interceptor.setClientRegistrationIdResolver(request -> registration);
         // One cached token per service account, whoever triggered the call
         interceptor.setPrincipalResolver(request -> new AnonymousAuthenticationToken(
                 "ums", "ums-service-account", AuthorityUtils.createAuthorityList("ROLE_SERVICE")));
         RestClient restClient = RestClient.builder()
-                .baseUrl(properties.keycloak().baseUrl() + "/admin/realms/" + type.getRealm())
+                .baseUrl(properties.keycloak().baseUrl() + "/admin/realms/" + realm)
                 .requestInterceptor(interceptor)
                 .defaultStatusHandler(HttpStatusCode::isError, KeycloakErrorTranslator::translate)
                 .build();

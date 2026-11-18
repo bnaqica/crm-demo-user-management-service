@@ -40,7 +40,14 @@ spring:
             client-id: ums-portal
             client-secret: ${KEYCLOAK_UMS_PORTAL_SECRET}
             authorization-grant-type: client_credentials
+          ums-admin:
+            provider: crm-admin
+            client-id: ums-admin
+            client-secret: ${KEYCLOAK_UMS_ADMIN_SECRET}
+            authorization-grant-type: client_credentials
         provider:
+          crm-admin:
+            token-uri: ${KEYCLOAK_BASE_URL}/realms/crm-admin/protocol/openid-connect/token
           crm-internal:
             token-uri: ${KEYCLOAK_BASE_URL}/realms/crm-internal/protocol/openid-connect/token
           portal:
@@ -54,8 +61,39 @@ spring:
       acks: all
 
 ums:
+  audit:
+    # User attributes never stored in audit records, comma-separated (credentials and tokens never are)
+    sensitive-attributes: ${UMS_AUDIT_SENSITIVE_ATTRIBUTES:}
+    partition-cron: ${UMS_AUDIT_PARTITION_CRON:0 30 2 * * *}   # creates next month's audit partition ahead
+    search:
+      max-range: ${UMS_AUDIT_SEARCH_MAX_RANGE:90d}   # longest time range one audit search may cover
+    # The central audit database (crm_audit_db), separate from this service's own
+    datasource:
+      url: ${AUDIT_DB_URL}
+      owner-username: ${AUDIT_DB_OWNER_USERNAME}     # runs the audit migrations
+      owner-password: ${AUDIT_DB_OWNER_PASSWORD}
+      writer-username: ${AUDIT_DB_WRITER_USERNAME}   # INSERT only
+      writer-password: ${AUDIT_DB_WRITER_PASSWORD}
+      reader-username: ${AUDIT_DB_READER_USERNAME}   # SELECT only
+      reader-password: ${AUDIT_DB_READER_PASSWORD}
   keycloak:
     base-url: ${KEYCLOAK_BASE_URL}
+  # Issuer of crm-internal service tokens, accepted on /internal/** only
+  internal-issuer-uri: ${JWT_INTERNAL_ISSUER_URI}
+  # Issuer of portal tokens; accepted on /internal/** only to refuse them with 403
+  portal-issuer-uri: ${JWT_PORTAL_ISSUER_URI}
+  cors:
+    allowed-origins: ${UMS_CORS_ALLOWED_ORIGINS:}   # browser origins allowed on /admin/**, comma-separated (the Admin UI)
+  promotion:
+    rate-limit-per-minute: ${UMS_PROMOTION_RATE_LIMIT:60}   # promote calls allowed per minute and instance
+  cleanup:
+    cron: ${UMS_CLEANUP_CRON:0 0 3 * * *}   # when unpromoted starters expire and unused invites are removed
+    starter-expiry-days: ${UMS_STARTER_EXPIRY_DAYS:30}   # a starter not promoted within this is disabled
+  grant-request-ttl: ${UMS_GRANT_REQUEST_TTL:72h}   # a privileged grant not approved in this time expires
+  # Keycloak user id of the break-glass admin; a login with it raises an alert. Empty: none configured
+  break-glass-admin-id: ${UMS_BREAK_GLASS_ADMIN_ID:}
+  team-scope:
+    super-manager-cache-ttl: ${UMS_SUPER_MANAGER_CACHE_TTL:1m}   # how long a Super Manager lookup is reused
   # Email domains of employees; comma-separated
   corporate-domains: ${UMS_CORPORATE_DOMAINS}
   invite-lifespan: ${UMS_INVITE_LIFESPAN:72h}   # how long invite links work

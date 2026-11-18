@@ -834,7 +834,9 @@
         "realm-management": [
           "manage-users",
           "view-users",
-          "query-groups"
+          "query-groups",
+          "view-clients",
+          "manage-clients"
         ]
       }
     },

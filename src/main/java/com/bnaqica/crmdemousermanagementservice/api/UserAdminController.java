@@ -3,16 +3,22 @@ package com.bnaqica.crmdemousermanagementservice.api;
 import com.bnaqica.crmdemousermanagementservice.dto.UserSearchCriteria;
 import com.bnaqica.crmdemousermanagementservice.dto.request.CreateInternalUserRequest;
 import com.bnaqica.crmdemousermanagementservice.dto.request.InviteExternalUserRequest;
+import com.bnaqica.crmdemousermanagementservice.dto.request.MultiTeamRequest;
 import com.bnaqica.crmdemousermanagementservice.dto.request.TicketRequest;
 import com.bnaqica.crmdemousermanagementservice.dto.request.UpdateUserRequest;
+import com.bnaqica.crmdemousermanagementservice.dto.response.MultiTeamResponse;
 import com.bnaqica.crmdemousermanagementservice.dto.response.UserPageResponse;
 import com.bnaqica.crmdemousermanagementservice.dto.response.UserResponse;
+import com.bnaqica.crmdemousermanagementservice.dto.response.UserTeamResponse;
 import com.bnaqica.crmdemousermanagementservice.entity.UserStatus;
 import com.bnaqica.crmdemousermanagementservice.entity.UserType;
+import com.bnaqica.crmdemousermanagementservice.service.TeamAdministrationService;
+import com.bnaqica.crmdemousermanagementservice.service.TeamDirectoryService;
 import com.bnaqica.crmdemousermanagementservice.service.UserAccountService;
 import com.bnaqica.crmdemousermanagementservice.service.UserOnboardingService;
 import com.bnaqica.crmdemousermanagementservice.service.UserSupportService;
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +43,8 @@ public class UserAdminController {
     private final UserOnboardingService onboarding;
     private final UserSupportService support;
     private final UserAccountService accounts;
+    private final TeamAdministrationService teams;
+    private final TeamDirectoryService directory;
 
     @GetMapping
     UserPageResponse search(
@@ -68,6 +76,16 @@ public class UserAdminController {
     @PutMapping("/{sub}")
     UserResponse update(@PathVariable UUID sub, @Valid @RequestBody UpdateUserRequest request) {
         return support.update(sub, request);
+    }
+
+    @GetMapping("/{sub}/teams")
+    List<UserTeamResponse> teams(@PathVariable UUID sub) {
+        return directory.teamsOf(sub);
+    }
+
+    @PutMapping("/{sub}/multi-team")
+    MultiTeamResponse setMultiTeam(@PathVariable UUID sub, @Valid @RequestBody MultiTeamRequest request) {
+        return teams.setMultiTeamAllowed(sub, request);
     }
 
     @PostMapping("/{sub}/disable")

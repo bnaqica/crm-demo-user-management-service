@@ -56,6 +56,14 @@ public class UserAccount {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** Why the UMS put the account in its status by itself, such as {@code STARTER_EXPIRED}; null otherwise. */
+    @Column(name = "status_reason")
+    private String statusReason;
+
+    /** Whether an admin allowed this user in more than one team. */
+    @Column(name = "multi_team_allowed", nullable = false)
+    private boolean multiTeamAllowed;
+
     @Version
     private long version;
 }

@@ -4,11 +4,14 @@ import com.bnaqica.crmdemousermanagementservice.dto.UserSearchCriteria;
 import com.bnaqica.crmdemousermanagementservice.dto.response.UserPageResponse;
 import com.bnaqica.crmdemousermanagementservice.dto.response.UserResponse;
 import com.bnaqica.crmdemousermanagementservice.entity.UserAccount;
+import com.bnaqica.crmdemousermanagementservice.entity.UserStatus;
 import com.bnaqica.crmdemousermanagementservice.exception.EmailAlreadyInUseException;
 import com.bnaqica.crmdemousermanagementservice.exception.UserNotFoundException;
 import com.bnaqica.crmdemousermanagementservice.repository.UserAccountRepository;
 import jakarta.persistence.criteria.Predicate;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -19,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -50,9 +54,21 @@ public class UserAccountServiceImpl implements UserAccountService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UserAccount lockForUpdate(UUID sub) {
+        return repository.findForUpdate(sub).orElseThrow(() -> new UserNotFoundException(sub));
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public Optional<UserAccount> findByEmail(String email) {
         return repository.findByEmailIgnoreCase(email);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserAccount> findAll(Collection<UUID> subs) {
+        return repository.findAllById(subs);
     }
 
     @Override
@@ -63,6 +79,19 @@ public class UserAccountServiceImpl implements UserAccountService {
         } catch (DataIntegrityViolationException ex) {
             throw new EmailAlreadyInUseException();
         }
+    }
+
+    @Override
+    @Transactional
+    public void delete(UserAccount account) {
+        repository.delete(account);
+        repository.flush();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserAccount> findByStatusCreatedBefore(UserStatus status, Instant before) {
+        return repository.findByStatusAndCreatedAtBefore(status, before);
     }
 
     @Override

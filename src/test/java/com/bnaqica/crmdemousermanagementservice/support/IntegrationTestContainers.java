@@ -7,6 +7,7 @@ import java.time.Duration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistrar;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -22,10 +23,13 @@ import org.testcontainers.utility.MountableFile;
  * start once per test run.
  */
 @TestConfiguration(proxyBeanMethods = false)
+@Import(AuditTestDatabase.class)
 public class IntegrationTestContainers {
 
     static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.8.1"; // same as local-docker
     static final String[] REALMS = {"crm-admin", "crm-internal", "portal"};
+    /** Containers start in seconds on an idle machine, but much slower when several test runs share Docker. */
+    static final Duration BUSY_MACHINE = Duration.ofMinutes(10);
 
     @Bean
     Network testNetwork() {
@@ -35,13 +39,13 @@ public class IntegrationTestContainers {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgresContainer() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:18"));
+        return new PostgreSQLContainer(DockerImageName.parse("postgres:18")).withStartupTimeout(BUSY_MACHINE);
     }
 
     @Bean
     @ServiceConnection
     KafkaContainer kafkaContainer() {
-        return new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.2"));
+        return new KafkaContainer(DockerImageName.parse("apache/kafka:4.3.2")).withStartupTimeout(BUSY_MACHINE);
     }
 
     @Bean
@@ -60,10 +64,14 @@ public class IntegrationTestContainers {
         return registry -> {
             registry.add("ums.keycloak.base-url", keycloak::baseUrl);
             registry.add("spring.security.oauth2.resourceserver.jwt.issuer-uri", () -> keycloak.issuer("crm-admin"));
+            registry.add("ums.internal-issuer-uri", () -> keycloak.issuer("crm-internal"));
+            registry.add("ums.portal-issuer-uri", () -> keycloak.issuer("portal"));
             registry.add(
                     "spring.security.oauth2.client.provider.crm-internal.token-uri",
                     () -> keycloak.tokenUri("crm-internal"));
             registry.add("spring.security.oauth2.client.provider.portal.token-uri", () -> keycloak.tokenUri("portal"));
+            registry.add(
+                    "spring.security.oauth2.client.provider.crm-admin.token-uri", () -> keycloak.tokenUri("crm-admin"));
         };
     }
 
@@ -82,7 +90,7 @@ public class IntegrationTestContainers {
             }
             withCommand("start-dev", "--import-realm");
             withExposedPorts(8080, 9000);
-            waitingFor(Wait.forHttp("/health/ready").forPort(9000).withStartupTimeout(Duration.ofMinutes(3)));
+            waitingFor(Wait.forHttp("/health/ready").forPort(9000).withStartupTimeout(BUSY_MACHINE));
         }
 
         /** The master realm demands HTTPS from outside the container; tests use its admin over plain HTTP. */

@@ -57,6 +57,24 @@
       }
     },
     {
+      "clientId": "ums-admin",
+      "description": "UMS admin-account guardrails in crm-admin",
+      "enabled": true,
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "ums-admin-local-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": [
+        "roles",
+        "basic",
+        "service_account"
+      ],
+      "optionalClientScopes": []
+    },
+    {
       "clientId": "test-client",
       "enabled": true,
       "publicClient": true,
@@ -84,6 +102,24 @@
       ]
     },
     {
+      "username": "test-admin-2",
+      "email": "test-admin-2@crm.local",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Test",
+      "lastName": "test-admin-2",
+      "realmRoles": [
+        "admin"
+      ],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Test-password-123",
+          "temporary": false
+        }
+      ]
+    },
+    {
       "username": "test-not-admin",
       "email": "test-not-admin@crm.local",
       "emailVerified": true,
@@ -98,6 +134,18 @@
           "temporary": false
         }
       ]
+    },
+    {
+      "username": "service-account-ums-admin",
+      "enabled": true,
+      "serviceAccountClientId": "ums-admin",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users"
+        ]
+      }
     }
   ]
 }

@@ -4,6 +4,9 @@ Every endpoint needs a JWT from the `crm-admin` realm with the realm role `admin
 `portal` gets 401; a `crm-admin` token without `admin` gets 403. Every write needs a `ticketRef` such as `OPS-12`.
 Errors are `ProblemDetail` responses.
 
+Browsers may call `/admin/**` only from the origins in `UMS_CORS_ALLOWED_ORIGINS` (the Admin UI,
+`http://localhost:5175` locally).
+
 Send `X-Correlation-Id` to tie the audit records of a request to your own logs; one is made up if you don't.
 
 | Method and path | Body | Does |
@@ -18,6 +21,8 @@ Send `X-Correlation-Id` to tie the audit records of a request to your own logs; 
 | `POST /admin/users/{sub}/unlock` | `ticketRef` | Clears a brute-force lockout |
 | `POST /admin/users/{sub}/logout` | `ticketRef` | Revokes all sessions |
 | `POST /admin/users/{sub}/reset-mfa` | `ticketRef` | Removes OTP and WebAuthn credentials; the user sets up TOTP at next login |
+| `GET /admin/users/{sub}/teams` | | The user's teams; see [teams](teams-api.md) |
+| `PUT /admin/users/{sub}/multi-team` | `allowed`, `ticketRef` | Allows the user in more than one team; see [teams](teams-api.md) |
 
 ## Rules
 
@@ -44,6 +49,7 @@ A user:
   "firstName": "Ana",
   "lastName": "Test",
   "status": "INVITED",
+  "multiTeamAllowed": false,
   "createdAt": "2026-11-11T10:00:00Z",
   "updatedAt": "2026-11-11T10:00:00Z"
 }

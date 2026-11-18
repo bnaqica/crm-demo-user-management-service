@@ -16,6 +16,7 @@ final class UserMapper {
                 .firstName(account.getFirstName())
                 .lastName(account.getLastName())
                 .status(account.getStatus())
+                .multiTeamAllowed(account.isMultiTeamAllowed())
                 .createdAt(account.getCreatedAt())
                 .updatedAt(account.getUpdatedAt())
                 .build();

@@ -23,8 +23,14 @@ import tools.jackson.databind.json.JsonMapper;
 class KeycloakEventServiceImplTests {
 
     private final UserAccountService accounts = mock(UserAccountService.class);
+    private final BreakGlassMonitor breakGlass = mock(BreakGlassMonitor.class);
     private final KeycloakEventServiceImpl service = new KeycloakEventServiceImpl(
-            JsonMapper.builder().build(), accounts, mock(LockoutMonitor.class), Clock.systemUTC());
+            JsonMapper.builder().build(),
+            accounts,
+            mock(LockoutMonitor.class),
+            breakGlass,
+            mock(StarterRegistrations.class),
+            Clock.systemUTC());
 
     private static String login(Object userId) {
         return """
@@ -63,5 +69,14 @@ class KeycloakEventServiceImplTests {
     void eventWithoutIdIsInvalid() {
         assertThatThrownBy(() -> service.handle("{\"type\":\"LOGIN\"}"))
                 .isInstanceOf(InvalidKeycloakEventException.class);
+    }
+
+    @Test
+    void adminRealmLoginGoesToTheBreakGlassMonitor() {
+        service.handle("""
+                {"id":"e9","time":1,"realm":"crm-admin","type":"LOGIN","userId":"%s"}""".formatted(UUID.randomUUID()));
+
+        verify(breakGlass).login(any());
+        verify(accounts, never()).update(any());
     }
 }

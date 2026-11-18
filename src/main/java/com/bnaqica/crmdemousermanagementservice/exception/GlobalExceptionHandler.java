@@ -21,6 +21,66 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
+    @ExceptionHandler(TeamNotFoundException.class)
+    ProblemDetail handleTeamNotFound(TeamNotFoundException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler(TeamConflictException.class)
+    ProblemDetail handleTeamConflict(TeamConflictException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(RoleNotFoundException.class)
+    ProblemDetail handleRoleNotFound(RoleNotFoundException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler(RoleConflictException.class)
+    ProblemDetail handleRoleConflict(RoleConflictException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(AuditSearchException.class)
+    ProblemDetail handleAuditSearch(AuditSearchException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(AuditRecordNotFoundException.class)
+    ProblemDetail handleAuditRecordNotFound(AuditRecordNotFoundException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler(PromotionConflictException.class)
+    ProblemDetail handlePromotionConflict(PromotionConflictException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    ProblemDetail handleRateLimit(RateLimitExceededException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, exception.getMessage());
+    }
+
+    @ExceptionHandler(LastAdminException.class)
+    ProblemDetail handleLastAdmin(LastAdminException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(GrantRequestNotFoundException.class)
+    ProblemDetail handleGrantRequestNotFound(GrantRequestNotFoundException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    @ExceptionHandler(GrantRequestClosedException.class)
+    ProblemDetail handleGrantRequestClosed(GrantRequestClosedException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(CatalogConflictException.class)
+    ProblemDetail handleCatalogConflict(CatalogConflictException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
     @ExceptionHandler(EmailAlreadyInUseException.class)
     ProblemDetail handleEmailInUse(EmailAlreadyInUseException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
@@ -40,7 +100,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ProblemDetail handleConcurrentChange(OptimisticLockingFailureException exception) {
         return ProblemDetail.forStatusAndDetail(
-                HttpStatus.CONFLICT, "The account was changed at the same time; reload it and try again");
+                HttpStatus.CONFLICT, "It was changed at the same time; reload it and try again");
     }
 
     /** An unknown {@code sort} property on a search. */

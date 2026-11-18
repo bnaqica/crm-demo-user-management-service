@@ -32,13 +32,41 @@
     "realm": [
       {
         "name": "external-starter",
-        "description": "Self-registered portal user"
+        "description": "Self-registered portal user",
+        "composite": true,
+        "composites": {
+          "client": {
+            "portal-app": [
+              "external-starter"
+            ]
+          }
+        }
       },
       {
         "name": "external-standard",
-        "description": "Promoted or invited portal user"
+        "description": "Promoted or invited portal user",
+        "composite": true,
+        "composites": {
+          "client": {
+            "portal-app": [
+              "external-standard"
+            ]
+          }
+        }
       }
-    ]
+    ],
+    "client": {
+      "portal-app": [
+        {
+          "name": "external-starter",
+          "description": "Self-registered portal user"
+        },
+        {
+          "name": "external-standard",
+          "description": "Promoted or invited portal user"
+        }
+      ]
+    }
   },
   "clients": [
     {
@@ -96,7 +124,10 @@
         "realm-management": [
           "manage-users",
           "view-users",
-          "query-groups"
+          "query-groups",
+          "view-clients",
+          "manage-clients",
+          "view-realm"
         ]
       }
     },

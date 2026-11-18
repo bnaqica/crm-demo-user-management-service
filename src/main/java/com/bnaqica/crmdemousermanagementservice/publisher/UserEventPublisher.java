@@ -1,8 +1,11 @@
 package com.bnaqica.crmdemousermanagementservice.publisher;
 
 import com.bnaqica.crmdemousermanagementservice.config.UmsProperties;
+import com.bnaqica.crmdemousermanagementservice.dto.event.RoleAssignmentChanged;
+import com.bnaqica.crmdemousermanagementservice.dto.event.TeamMembershipChanged;
 import com.bnaqica.crmdemousermanagementservice.dto.event.UserCreated;
 import com.bnaqica.crmdemousermanagementservice.dto.event.UserDisabled;
+import com.bnaqica.crmdemousermanagementservice.dto.event.UserPromoted;
 import com.bnaqica.crmdemousermanagementservice.entity.UserAccount;
 import com.bnaqica.crmdemousermanagementservice.service.OutboxService;
 import java.time.Clock;
@@ -56,7 +59,63 @@ public class UserEventPublisher {
                         .build());
     }
 
+    /** {@code member} and {@code manager} describe the user's place in the team after the change. */
+    public void teamMembershipChanged(UUID sub, UUID teamId, boolean member, boolean manager) {
+        publish(
+                sub,
+                TeamMembershipChanged.builder()
+                        .type("TeamMembershipChanged")
+                        .eventId(UUID.randomUUID())
+                        .schemaVersion(SCHEMA_VERSION)
+                        .occurredAt(Instant.now(clock))
+                        .sub(sub)
+                        .teamId(teamId)
+                        .member(member)
+                        .manager(manager)
+                        .build());
+    }
+
+    public void userPromoted(UserAccount account) {
+        publish(
+                account,
+                UserPromoted.builder()
+                        .type("UserPromoted")
+                        .eventId(UUID.randomUUID())
+                        .schemaVersion(SCHEMA_VERSION)
+                        .occurredAt(Instant.now(clock))
+                        .sub(account.getSub())
+                        .userType(account.getUserType())
+                        .email(account.getEmail())
+                        .build());
+    }
+
+    public void roleAssigned(UserAccount account, String role) {
+        roleChanged(account, role, "RoleAssigned");
+    }
+
+    public void roleRevoked(UserAccount account, String role) {
+        roleChanged(account, role, "RoleRevoked");
+    }
+
+    private void roleChanged(UserAccount account, String role, String type) {
+        publish(
+                account,
+                RoleAssignmentChanged.builder()
+                        .type(type)
+                        .eventId(UUID.randomUUID())
+                        .schemaVersion(SCHEMA_VERSION)
+                        .occurredAt(Instant.now(clock))
+                        .sub(account.getSub())
+                        .userType(account.getUserType())
+                        .role(role)
+                        .build());
+    }
+
     private void publish(UserAccount account, Object event) {
-        outbox.add(properties.topics().userEvents(), account.getSub().toString(), jsonMapper.writeValueAsString(event));
+        publish(account.getSub(), event);
+    }
+
+    private void publish(UUID sub, Object event) {
+        outbox.add(properties.topics().userEvents(), sub.toString(), jsonMapper.writeValueAsString(event));
     }
 }

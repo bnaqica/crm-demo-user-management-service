@@ -20,9 +20,14 @@ public class AdminApi {
     private final String token;
 
     public AdminApi(MockMvc mockMvc, KeycloakContainer keycloak, MailpitContainer mailpit) {
+        this(mockMvc, keycloak, mailpit, "test-admin");
+    }
+
+    /** As another crm-admin user, such as {@code test-admin-2}. */
+    public AdminApi(MockMvc mockMvc, KeycloakContainer keycloak, MailpitContainer mailpit, String admin) {
         this.mockMvc = mockMvc;
         this.mailpit = mailpit;
-        this.token = new TestTokens(keycloak).adminToken();
+        this.token = new TestTokens(keycloak).userToken("crm-admin", admin);
     }
 
     /** The test admin's sub, as the audit records it. */
@@ -50,6 +55,18 @@ public class AdminApi {
                 .header("Authorization", "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(JSON.writeValueAsString(body)));
+    }
+
+    public ResultActions delete(String path, Map<String, ?> body) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.delete(path)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(JSON.writeValueAsString(body)));
+    }
+
+    /** Creates a team and returns its id. */
+    public String createTeam(String name) throws Exception {
+        return field(post("/admin/teams", Map.of("name", name, "ticketRef", "OPS-1")), "id");
     }
 
     public ResultActions get(String path) throws Exception {

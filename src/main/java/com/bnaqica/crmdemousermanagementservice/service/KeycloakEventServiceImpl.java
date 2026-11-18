@@ -2,6 +2,7 @@ package com.bnaqica.crmdemousermanagementservice.service;
 
 import com.bnaqica.crmdemousermanagementservice.dto.event.KeycloakEvent;
 import com.bnaqica.crmdemousermanagementservice.entity.UserStatus;
+import com.bnaqica.crmdemousermanagementservice.entity.UserType;
 import com.bnaqica.crmdemousermanagementservice.exception.InvalidKeycloakEventException;
 import java.time.Clock;
 import java.time.Instant;
@@ -14,8 +15,8 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * A first {@code LOGIN} moves an INVITED user to ACTIVE; lockout events feed the mass-lockout alert. Everything else
- * is ignored here. Handling is idempotent, because Kafka delivers at least once.
+ * A first {@code LOGIN} moves an INVITED user to ACTIVE; a crm-admin {@code LOGIN} goes to the break-glass check;
+ * a portal {@code REGISTER} records a STARTER; lockout events feed the mass-lockout alert. Everything else is ignored here. Handling is idempotent, because Kafka delivers at least once.
  */
 @Slf4j
 @Service
@@ -28,13 +29,23 @@ public class KeycloakEventServiceImpl implements KeycloakEventService {
     private final JsonMapper jsonMapper;
     private final UserAccountService accounts;
     private final LockoutMonitor lockoutMonitor;
+    private final BreakGlassMonitor breakGlass;
+    private final StarterRegistrations starters;
     private final Clock clock;
 
     @Override
     public void handle(String payload) {
         KeycloakEvent event = parse(payload);
-        if ("LOGIN".equals(event.type())) {
+        if ("LOGIN".equals(event.type()) && AdminAccounts.REALM.equals(event.realm())) {
+            breakGlass.login(event);
+        } else if ("LOGIN".equals(event.type())) {
             activateIfInvited(event);
+        } else if ("REGISTER".equals(event.type())
+                && UserType.EXTERNAL.getRealm().equals(event.realm())) {
+            UUID sub = parseSub(event.userId());
+            if (sub != null) {
+                starters.record(event, sub);
+            }
         } else if (LOCKOUT_TYPES.contains(event.type())) {
             lockoutMonitor.record(event);
         } else {

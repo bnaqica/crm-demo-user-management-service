@@ -14,5 +14,6 @@ public record UserResponse(
         String firstName,
         String lastName,
         UserStatus status,
+        boolean multiTeamAllowed,
         Instant createdAt,
         Instant updatedAt) {}

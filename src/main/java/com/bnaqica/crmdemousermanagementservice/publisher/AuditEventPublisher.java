@@ -32,6 +32,9 @@ import tools.jackson.databind.json.JsonMapper;
 public class AuditEventPublisher {
 
     static final String CORRELATION_HEADER = "X-Correlation-Id";
+    /** The actor of what the UMS does by itself. */
+    static final String SYSTEM_ACTOR = "ums";
+
     private static final String CORRELATION_ATTRIBUTE = AuditEventPublisher.class.getName() + ".correlationId";
 
     private final OutboxService outbox;
@@ -59,6 +62,11 @@ public class AuditEventPublisher {
         return run(work, () -> event(action, targetId, ticketRef));
     }
 
+    /** As {@link #audited}, with the realm on a failure too, for actions whose realm is known up front. */
+    public <T> T audited(AuditAction action, UserType userType, String targetId, String ticketRef, Supplier<T> work) {
+        return run(work, () -> event(action, targetId, ticketRef).realm(userType.getRealm()));
+    }
+
     /**
      * As {@link #audited}, for creating a user, which has no id until it succeeds. A failure is recorded with the
      * realm and {@code requested} as its {@code after}.
@@ -82,10 +90,36 @@ public class AuditEventPublisher {
     /** Call inside the transaction that makes the change. */
     public void success(
             AuditAction action, UserType userType, UUID target, String ticketRef, Object before, Object after) {
-        publish(event(action, target.toString(), ticketRef)
-                .realm(userType.getRealm())
+        success(action, userType.getRealm(), target.toString(), ticketRef, before, after);
+    }
+
+    /** As above, for a target that isn't a UUID, such as a service's catalog; {@code ticketRef} may be null. */
+    public void success(
+            AuditAction action, String realm, String targetId, String ticketRef, Object before, Object after) {
+        publish(event(action, targetId, ticketRef)
+                .realm(realm)
                 .outcome("SUCCESS")
                 .before(before)
+                .after(after)
+                .build());
+    }
+
+    /**
+     * An audit record for something the UMS noticed or did by itself (a job, a Keycloak event), with actor SYSTEM.
+     * Call inside a transaction.
+     */
+    public void system(AuditAction action, String realm, String targetId, Object after) {
+        system(action, realm, targetId, after, UUID.randomUUID());
+    }
+
+    /** As above, with a given event id, so a redelivered trigger yields the same id and consumers drop it. */
+    public void system(AuditAction action, String realm, String targetId, Object after, UUID eventId) {
+        publish(event(action, targetId, null)
+                .eventId(eventId)
+                .actorId(SYSTEM_ACTOR)
+                .actorType("SYSTEM")
+                .realm(realm)
+                .outcome("SUCCESS")
                 .after(after)
                 .build());
     }
@@ -106,15 +140,16 @@ public class AuditEventPublisher {
 
     private AuditEvent.AuditEventBuilder event(AuditAction action, String targetId, String ticketRef) {
         HttpServletRequest request = currentRequest();
+        Actor actor = actor();
         return AuditEvent.builder()
                 .eventId(UUID.randomUUID())
                 .schemaVersion(1)
                 .occurredAt(Instant.now(clock))
                 .source("UMS")
-                .actorId(actorId())
-                .actorType("ADMIN")
+                .actorId(actor.id())
+                .actorType(actor.type())
                 .action(action)
-                .targetType("USER")
+                .targetType(action.getTargetType())
                 .targetId(targetId)
                 .ticketRef(ticketRef)
                 .ipAddress(request == null ? null : request.getRemoteAddr())
@@ -126,13 +161,23 @@ public class AuditEventPublisher {
         outbox.add(properties.topics().auditEvents(), key, jsonMapper.writeValueAsString(event));
     }
 
-    private static String actorId() {
+    /**
+     * An admin is identified by their sub; a service calling {@code /internal/**} with a client-credentials token is
+     * SYSTEM, identified by its client id.
+     */
+    private static Actor actor() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication instanceof JwtAuthenticationToken jwt) {
-            return jwt.getToken().getSubject();
+            String clientId = jwt.getToken().getClaimAsString("client_id");
+            if (clientId != null && clientId.equals(jwt.getToken().getClaimAsString("azp"))) {
+                return new Actor(clientId, "SYSTEM");
+            }
+            return new Actor(jwt.getToken().getSubject(), "ADMIN");
         }
-        return "anonymous"; // only in the local profile, where authentication is off
+        return new Actor("anonymous", "ADMIN"); // only in the local profile, where authentication is off
     }
+
+    private record Actor(String id, String type) {}
 
     /** The caller's {@code X-Correlation-Id}, or one made up once per request so all its events share it. */
     private static String correlationId(HttpServletRequest request) {

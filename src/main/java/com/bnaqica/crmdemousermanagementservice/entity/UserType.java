@@ -11,4 +11,11 @@ public enum UserType {
     EXTERNAL("portal");
 
     private final String realm;
+
+    /** The user type whose users live in {@code realm}. */
+    public static java.util.Optional<UserType> ofRealm(String realm) {
+        return java.util.Arrays.stream(values())
+                .filter(type -> type.realm.equals(realm))
+                .findFirst();
+    }
 }

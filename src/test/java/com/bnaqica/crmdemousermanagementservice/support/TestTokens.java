@@ -31,6 +31,27 @@ public class TestTokens {
         return (String) response.get("access_token");
     }
 
+    /** A client-credentials (service account) token. */
+    public String clientToken(String realm, String clientId, String secret) {
+        var form = new LinkedMultiValueMap<String, String>();
+        form.add("grant_type", "client_credentials");
+        form.add("client_id", clientId);
+        form.add("client_secret", secret);
+        Map<?, ?> response = RestClient.create()
+                .post()
+                .uri(keycloak.tokenUri(realm))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(form)
+                .retrieve()
+                .body(Map.class);
+        return (String) response.get("access_token");
+    }
+
+    /** core-service's service account in crm-internal, which holds scope {@code ums:team-scope}. */
+    public String teamScopeClientToken() {
+        return clientToken("crm-internal", "core-service", "core-service-local-secret");
+    }
+
     public String adminToken() {
         return userToken("crm-admin", "test-admin");
     }
