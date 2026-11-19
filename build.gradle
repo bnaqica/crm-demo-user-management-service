@@ -35,7 +35,7 @@ dependencies {
     // springdoc isn't in Spring Boot's BOM
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0'
     // Rate limit of the promote API; not in Spring Boot's BOM
-    implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.22.0'
     // One runner across instances for the starter-expiry and invite-cleanup jobs; not in Spring Boot's BOM
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.10.1'
     implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1'
