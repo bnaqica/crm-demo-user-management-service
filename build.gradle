@@ -38,7 +38,7 @@ dependencies {
     implementation 'com.bucket4j:bucket4j_jdk17-core:8.21.0'
     // One runner across instances for the starter-expiry and invite-cleanup jobs; not in Spring Boot's BOM
     implementation 'net.javacrumbs.shedlock:shedlock-spring:7.10.1'
-    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.11.0'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
